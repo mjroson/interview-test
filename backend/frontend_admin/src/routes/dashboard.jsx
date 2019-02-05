@@ -5,7 +5,7 @@ const dashboardRoutes = [
 
     {
         path: "/solicitudes",
-        sidebarName: "Solicitudes de Prestamos",
+        sidebarName: "Solicitudes",
         navbarName: "Material Dashboard",
         icon: 'table',
         component: TablePage

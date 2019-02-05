@@ -30,8 +30,9 @@ class ObjectsTable extends React.Component {
                 sorter: true,
             },
             {
-                title: 'Email',
-                dataIndex: 'email',
+                title: 'Monto',
+                dataIndex: 'amount',
+                render: amount =>  <span className="price">$ {amount}</span>,
                 sorter: true,
             },
             {
