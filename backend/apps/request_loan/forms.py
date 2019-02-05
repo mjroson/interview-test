@@ -16,7 +16,7 @@ class RequestLoanModelForm(forms.ModelForm):
             .format(cleaned_data['document_number'], cleaned_data['gender'].upper(), cleaned_data['email'])
         response = requests.get(url)
         if response.json().get('error'):
-            forms.ValidationError("Hubo un error en el servidor, vuelva a intentarlo mas tarde.")
+            raise forms.ValidationError("Hubo un error en el servidor, vuelva a intentarlo mas tarde.")
 
         return cleaned_data
 
