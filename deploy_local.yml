@@ -1,0 +1,44 @@
+version: '3.1'
+services:
+  # Postgresql database
+  db:
+    image: postgres:latest
+    env_file: .env
+    container_name: ${PROJ_NAME}_db
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    volumes:
+      - database:/var/lib/postgresql/data
+    
+  # Django backend
+  backend:
+    image: ${PROJ_NAME}_backend:${IMG_VERSION}
+    container_name: ${PROJ_NAME}_backend
+    command: bash -c "sleep 10 && sh run.sh"
+    env_file: .env
+    environment:
+      - ENVIRONMENT=local
+      - DJANGO_DEBUG=True
+    volumes:
+      - ./backend:/usr/src/app
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+
+  # ReactJS frontend
+  frontend:
+    build: ./backend/frontend_admin
+    container_name: ${PROJ_NAME}_frontend
+    command: bash -c "npm run --prefix ./frontend_admin start"
+    volumes:
+    - ./backend:/usr/src/app
+    ports:
+    - "3000:3000"
+
+volumes:
+  database:

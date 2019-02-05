@@ -1,0 +1,92 @@
+version: '3'
+services:
+  # Postgresql database
+  db:
+    image: postgres:latest
+    container_name: ${PROJ_NAME}_db
+    env_file: .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    volumes:
+      - database:/var/lib/postgresql/data
+    networks:
+      - database
+
+  # Django backend
+  backend:
+    image: ${PROJ_NAME}_backend:${IMG_VERSION}
+    container_name: ${PROJ_NAME}_backend
+    command: bash -c "sleep 10 && sh run.sh"
+    env_file: .env
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - ./backend:/usr/src/app
+    expose:
+      - "8000"
+    depends_on:
+      - db
+    networks:
+      - backend
+      - database
+
+  # Build dynamic configuration for nginx
+  nginx_template:
+    image: nginx:latest
+    container_name: ${PROJ_NAME}_nginx_template
+    env_file: .env
+    entrypoint: /bin/bash -c "envsubst '$$HOST_NAME' < /etc/nginx/conf.d/site.template > /etc/nginx/conf.d/site.conf"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+    networks:
+      - backend
+
+  # Web server/proxy
+  nginx:
+    image: nginx:latest
+    container_name: ${PROJ_NAME}_nginx
+    env_file: .env
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./logs/nginx:/tmp/logs
+      - ./static:/opt/app/static
+      - ./media:/opt/app/media
+      - ./nginx/run.sh:/opt/run.sh
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./nginx/certbot/conf:/etc/letsencrypt
+      - ./nginx/certbot/www:/var/www/certbot
+    networks:
+      - backend
+    links:
+      - backend
+    depends_on:
+      - backend
+      - nginx_template
+
+  # Generate certificate with letsencrypt
+  certbot:
+    image: certbot/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    volumes:
+      - ./nginx/certbot/conf:/etc/letsencrypt
+      - ./nginx/certbot/www:/var/www/certbot
+
+volumes:
+  database:
+
+networks:
+  backend:
+  database:
