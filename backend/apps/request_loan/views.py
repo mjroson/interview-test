@@ -24,4 +24,4 @@ class RequestLoanModelViewSet(ModelViewSet):
     serializer_class = RequestLoanModelSerializer
     queryset = RequestLoan.objects.all()
     http_method_names = ('get', 'put', 'delete')
-    ordering_fields = ('full_name', 'created_at', 'email', 'document_number', 'status')
+    ordering_fields = ('full_name', 'created_at', 'amount', 'document_number', 'status')
